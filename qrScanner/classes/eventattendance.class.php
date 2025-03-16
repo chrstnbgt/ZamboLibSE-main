@@ -1,0 +1,78 @@
+<?php
+
+require_once 'database.php';
+
+class EventAttendance{
+    //attributes
+
+    public $eventAttendanceID;
+    public $userID;
+    public $dateEntered;
+    public $timeEntered;
+
+    protected $db;
+    
+    function __construct()
+    {
+        $this->db = new Database();
+    }
+
+    //Methods
+
+    public function fetch($eventID) {
+        try {
+            $stmt = $this->db->connect()->prepare("SELECT * FROM event WHERE eventID = :eventID");
+            $stmt->bindParam(':eventID', $eventID, PDO::PARAM_INT);
+            $stmt->execute();
+    
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if (empty($result)) {
+                return false; // Event not found
+            }
+    
+            return $result[0];
+        } catch (PDOException $e) {
+            // Handle the exception, e.g., log the error or show a user-friendly message
+            echo "Error fetching event: " . $e->getMessage();
+            return false;
+        }
+    }
+
+
+    function showEventAttendance($eventAttendanceID)
+    {
+        $sql = "SELECT e.*, CONCAT(u.userFirstName, ' ', u.userLastName) AS fullName 
+                FROM event_attendanceuser e 
+                INNER JOIN user u ON e.userID = u.userID 
+                WHERE e.eventAttendanceID = :eventAttendanceID
+                ORDER BY e.timeEntered DESC";
+        $query = $this->db->connect()->prepare($sql);
+        $query->bindParam(':eventAttendanceID', $eventAttendanceID, PDO::PARAM_INT);
+        $data = null;
+        if ($query->execute()) {
+            $data = $query->fetchAll();
+        }
+        return $data ?: []; // Return an empty array if $data is falsy
+    }
+    
+    
+
+    function getAllEvents() {
+        $sql = "SELECT * FROM event";
+        $query = $this->db->connect()->prepare($sql);
+    
+        $events = null;
+    
+        if ($query->execute()) {
+            $events = $query->fetchAll();
+        }
+    
+        return $events;
+    }
+
+    public function getDb() {
+        return $this->db;
+    }
+}
+
+?>
